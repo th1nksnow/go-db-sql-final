@@ -61,7 +61,7 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 	for rows.Next() {
 		p := Parcel{}
 
-		err := rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, p.CreatedAt)
+		err := rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 		if err != nil {
 			return nil, err
 		}

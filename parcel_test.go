@@ -76,6 +76,7 @@ func TestSetAddress(t *testing.T) {
 	parcel.Number, err = store.Add(parcel)
 	require.NoError(t, err)
 	require.NotEmpty(t, parcel.Number)
+
 	// set address
 	// обновите адрес, убедитесь в отсутствии ошибки
 	newAddress := "new test address"
@@ -117,46 +118,53 @@ func TestSetStatus(t *testing.T) {
 	assert.Equal(t, ParcelStatusSent, parcel.Status)
 }
 
-// // TestGetByClient проверяет получение посылок по идентификатору клиента
-// func TestGetByClient(t *testing.T) {
-// 	// prepare
-// 	db, err := sql.Open("sqlite", "demo.db") // настройте подключение к БД
-//     require.NoError(t, err)
-//     defer db.Close()
+// TestGetByClient проверяет получение посылок по идентификатору клиента
+func TestGetByClient(t *testing.T) {
+	// prepare
+	db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
+	require.NoError(t, err)
+	defer db.Close()
 
-// 	parcels := []Parcel{
-// 		getTestParcel(),
-// 		getTestParcel(),
-// 		getTestParcel(),
-// 	}
-// 	parcelMap := map[int]Parcel{}
+	store := NewParcelStore(db)
 
-// 	// задаём всем посылкам один и тот же идентификатор клиента
-// 	client := randRange.Intn(10_000_000)
-// 	parcels[0].Client = client
-// 	parcels[1].Client = client
-// 	parcels[2].Client = client
+	parcels := []Parcel{
+		getTestParcel(),
+		getTestParcel(),
+		getTestParcel(),
+	}
+	parcelMap := map[int]Parcel{}
 
-// 	// add
-// 	for i := 0; i < len(parcels); i++ {
-// 		id, err := // добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+	// задаём всем посылкам один и тот же идентификатор клиента
+	client := randRange.Intn(10_000_000)
+	parcels[0].Client = client
+	parcels[1].Client = client
+	parcels[2].Client = client
 
-// 		// обновляем идентификатор добавленной у посылки
-// 		parcels[i].Number = id
+	// add
+	for i := 0; i < len(parcels); i++ {
+		id, err := store.Add(parcels[i]) // добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+		require.NoError(t, err)
+		require.NotEmpty(t, id)
 
-// 		// сохраняем добавленную посылку в структуру map, чтобы её можно было легко достать по идентификатору посылки
-// 		parcelMap[id] = parcels[i]
-// 	}
+		// обновляем идентификатор добавленной у посылки
+		parcels[i].Number = id
 
-// 	// get by client
-// 	storedParcels, err := // получите список посылок по идентификатору клиента, сохранённого в переменной client
-// 	// убедитесь в отсутствии ошибки
-// 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
+		// сохраняем добавленную посылку в структуру map, чтобы её можно было легко достать по идентификатору посылки
+		parcelMap[id] = parcels[i]
+	}
 
-// 	// check
-// 	for _, parcel := range storedParcels {
-// 		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
-// 		// убедитесь, что все посылки из storedParcels есть в parcelMap
-// 		// убедитесь, что значения полей полученных посылок заполнены верно
-// 	}
-// }
+	// get by client
+	storedParcels, err := store.GetByClient(client) // получите список посылок по идентификатору клиента, сохранённого в переменной client
+	require.NoError(t, err)                         // убедитесь в отсутствии ошибки
+	require.Len(t, storedParcels, len(parcels))     // убедитесь, что количество полученных посылок совпадает с количеством добавленных
+
+	// check
+	for _, parcel := range storedParcels {
+		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
+		// убедитесь, что все посылки из storedParcels есть в parcelMap
+		expectedParcel, isExist := parcelMap[parcel.Number]
+		require.True(t, isExist)
+		// убедитесь, что значения полей полученных посылок заполнены верно
+		assert.Equal(t, expectedParcel, parcel)
+	}
+}
